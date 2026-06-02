@@ -15,6 +15,9 @@ import {
   Building2,
   LogOut,
   X,
+  Trash2,
+  Trash2Icon,
+  Kanban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app';
@@ -22,6 +25,10 @@ import { useAuthStore } from '@/store/auth';
 import { useOrganizations, useProjects } from '@/lib/queries';
 import { useRouter } from 'next/navigation';
 import { logoutUser } from '@/lib/auth-api';
+import { CreateOrgModal } from '@/components/modals/CreateOrgModal';
+import { DeleteOrgModal } from '../modals/DeleteOrgModal';
+import { useOrgMembers } from '@/lib/queries';
+import { CreateProjectModal } from '@/components/modals/CreateProjectModal';
 
 export function Sidebar() {
   const router = useRouter();
@@ -29,12 +36,22 @@ export function Sidebar() {
   const { activeOrgId, activeProjectId, sidebarOpen, setActiveOrg, setActiveProject, setSidebarOpen } = useAppStore();
   const { user, clearAuth } = useAuthStore();
 
+  const { data: members = [] } = useOrgMembers(activeOrgId);
+    
+  const [createOrgOpen, setCreateOrgOpen] = useState(false);
+  const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
+
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
 
   const { data: orgs = [], isLoading: orgsLoading } = useOrganizations();
   const { data: projects = [], isLoading: projectsLoading } = useProjects(activeOrgId);
 
+  const isOwner = members.some(
+    (m) => m.userId === user?.id && m.role === 'owner'
+  );
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
 
   const handleLogout = async () => {
@@ -46,11 +63,12 @@ export function Sidebar() {
   };
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
-    { href: '/dashboard/members', icon: Users, label: 'Members' },
-    { href: '/dashboard/activity', icon: Activity, label: 'Activity' },
-    { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
-  ];
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
+  { href: '/dashboard/board', icon: Kanban, label: 'Board' },
+  { href: '/dashboard/members', icon: Users, label: 'Members' },
+  { href: '/dashboard/activity', icon: Activity, label: 'Activity' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+];
 
   if (!sidebarOpen) return null;
 
@@ -131,9 +149,31 @@ export function Sidebar() {
                   </button>
                 ))
               )}
+              {/* Delete org — owner only */}
+              {isOwner && activeOrgId && (
+                <button
+                  onClick={() => {
+                    setDeleteOrgOpen(true);
+                    setOrgDropdownOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs
+                    text-red-400 hover:text-red-500
+                    hover:bg-red-50 dark:hover:bg-red-500/10
+                    transition-colors border-t border-black/[0.06] dark:border-white/[0.06]"
+                >
+                  <Trash2Icon size={12} />
+                  Delete organization
+                </button>
+              )}
               <button
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-black/40 dark:text-white/40
-                  hover:text-black/70 dark:hover:text-white/70 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors border-t border-black/[0.06] dark:border-white/[0.06]"
+                onClick={() => {
+                  setCreateOrgOpen(true);
+                  setOrgDropdownOpen(false);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs
+                  text-black/40 dark:text-white/40
+                  hover:text-[#FAD4C0] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]
+                  transition-colors border-t border-black/[0.06] dark:border-white/[0.06]"
               >
                 <Plus size={12} />
                 New organization
@@ -195,7 +235,10 @@ export function Sidebar() {
                       return (
                         <button
                           key={project.id}
-                          onClick={() => setActiveProject(project.id)}
+                          onClick={() => {
+                            setActiveProject(project.id);
+                            router.push('/dashboard/board');
+                          }}
                           className={cn(
                             'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all text-left',
                             active
@@ -210,8 +253,11 @@ export function Sidebar() {
                     })
                   )}
                   <button
+                    onClick={() => setCreateProjectOpen(true)}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs
-                      text-black/30 dark:text-white/30 hover:text-[#FAD4C0]/70 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
+                      text-black/30 dark:text-white/30
+                      hover:text-[#80A1C1] hover:bg-black/[0.03] dark:hover:bg-white/[0.03]
+                      transition-colors"
                   >
                     <Plus size={12} />
                     New project
@@ -244,6 +290,19 @@ export function Sidebar() {
           </div>
         </div>
       </aside>
+      <CreateOrgModal
+        open={createOrgOpen}
+        onClose={() => setCreateOrgOpen(false)}
+      />
+      <DeleteOrgModal
+        open={deleteOrgOpen}
+        onClose={() => setDeleteOrgOpen(false)}
+        org={activeOrg ?? null}
+      />
+      <CreateProjectModal
+        open={createProjectOpen}
+        onClose={() => setCreateProjectOpen(false)}
+      />
     </>
   );
 }

@@ -18,6 +18,11 @@ import {
   ArrowRight,
   Calendar,
 } from 'lucide-react';
+import { CreateOrgModal } from '@/components/modals/CreateOrgModal';
+import { useState } from 'react';
+import { CreateProjectModal } from '@/components/modals/CreateProjectModal';
+import { CreateTaskModal } from '@/components/modals/CreateTaskModal';
+import { useRouter } from 'next/navigation';
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -103,7 +108,8 @@ function StatCard({
 
 // ─── Empty state ──────────────────────────────────────────────
 
-function EmptyOrg() {
+// change EmptyOrg to accept a prop
+function EmptyOrg({ onCreateOrg }: { onCreateOrg: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
       <div className="w-16 h-16 rounded-2xl bg-[#FAD4C0]/10 border border-[#FAD4C0]/20 flex items-center justify-center">
@@ -113,7 +119,10 @@ function EmptyOrg() {
         <h3 className="text-black dark:text-white font-semibold text-lg">No organization selected</h3>
         <p className="text-black/40 dark:text-white/40 text-sm mt-1">Select or create an organization from the sidebar to get started.</p>
       </div>
-      <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FAD4C0] text-[#0F0F0F] font-semibold text-sm hover:bg-[#FAD4C0]/90 transition-colors">
+      <button
+        onClick={onCreateOrg}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FAD4C0] text-[#0F0F0F] font-semibold text-sm hover:bg-[#FAD4C0]/90 transition-colors"
+      >
         <Plus size={16} />
         Create organization
       </button>
@@ -126,13 +135,19 @@ function EmptyOrg() {
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const { activeOrgId, activeProjectId, setActiveProject } = useAppStore();
+  const router = useRouter();
+
+  const [createOrgOpen, setCreateOrgOpen] = useState(false);
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   const { data: org } = useOrganization(activeOrgId);
   const { data: projects = [], isLoading: projectsLoading } = useProjects(activeOrgId);
   const { data: members = [], isLoading: membersLoading } = useOrgMembers(activeOrgId);
-  const { data: activity = [], isLoading: activityLoading } = useOrgActivity(activeOrgId);
+  const { data: activityData, isLoading: activityLoading } = useOrgActivity(activeOrgId);
   const { data: taskData } = useTasks(activeOrgId, activeProjectId ?? projects[0]?.id ?? null);
 
+  const activity = activityData?.logs ?? [];
   const tasks = taskData?.tasks ?? [];
 
   // Task status counts
@@ -146,7 +161,14 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  if (!activeOrgId) return <EmptyOrg />;
+  if (!activeOrgId) {
+    return (
+      <>
+        <EmptyOrg onCreateOrg={() => setCreateOrgOpen(true)} />
+        <CreateOrgModal open={createOrgOpen} onClose={() => setCreateOrgOpen(false)} />
+      </>
+    );
+  }
 
   return (
     <div className="px-6 py-6 max-w-7xl mx-auto">
@@ -170,13 +192,22 @@ export default function DashboardPage() {
 
           {/* Quick actions */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl
+            <button
+            onClick={() => setCreateTaskOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl
               bg-[#FAD4C0] text-[#0F0F0F] font-semibold text-sm hover:bg-[#FAD4C0]/90 transition-colors">
               <Plus size={16} />
               New Task
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-black/[0.06] dark:bg-white/[0.06] text-black/70 dark:text-white/70 font-medium text-sm hover:bg-black/[0.10] dark:bg-white/[0.10] transition-colors border border-black/[0.08] dark:border-white/[0.08]">
+            <button
+              onClick={() => setCreateProjectOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl
+                bg-black/[0.06] dark:bg-white/[0.06]
+                text-black/70 dark:text-white/70
+                font-medium text-sm
+                hover:bg-black/[0.10] dark:hover:bg-white/[0.10]
+                transition-colors border border-black/[0.08] dark:border-white/[0.08]"
+            >
               <FolderKanban size={16} />
               New Project
             </button>
@@ -257,7 +288,10 @@ export default function DashboardPage() {
                 return (
                   <button
                     key={project.id}
-                    onClick={() => setActiveProject(project.id)}
+                    onClick={() => {
+                      setActiveProject(project.id);
+                      router.push('/dashboard/board');
+                    }}
                     className={cn(
                       'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left group',
                       activeProjectId === project.id
@@ -421,14 +455,16 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-0">
-              {activity.slice(0, 8).map((log, i) => (
-                <div
-                  key={log.id}
-                  className={cn(
-                    'flex gap-3 py-3',
-                    i < activity.slice(0, 8).length - 1 && 'border-b border-black/[0.04] dark:border-white/[0.04]'
-                  )}
-                >
+              {(() => {
+                const recentActivity = activity.slice(0, 8);
+                return recentActivity.map((log, i) => (
+                  <div
+                    key={log.id}
+                    className={cn(
+                      'flex gap-3 py-3',
+                      i < recentActivity.length - 1 && 'border-b border-black/[0.04] dark:border-white/[0.04]'
+                    )}
+                  >
                   {/* Avatar */}
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FAD4C0]/20 to-[#80A1C1]/20 border border-black/10 dark:border-white/10 flex items-center justify-center text-[10px] font-bold text-black/60 dark:text-white/60 flex-shrink-0 mt-0.5">
                     {log.actor?.firstName?.[0]?.toUpperCase() ?? '?'}
@@ -455,12 +491,23 @@ export default function DashboardPage() {
                       {timeAgo(log.createdAt)}
                     </p>
                   </div>
-                </div>
-              ))}
+                  </div>
+                ));
+              })()}
             </div>
           )}
         </div>
       </div>
+
+      <CreateProjectModal
+        open={createProjectOpen}
+        onClose={() => setCreateProjectOpen(false)}
+      />
+
+      <CreateTaskModal
+        open={createTaskOpen}
+        onClose={() => setCreateTaskOpen(false)}
+      />
     </div>
   );
 }

@@ -8,8 +8,10 @@ import { useOrganizations } from '@/lib/queries';
 import { useAuthStore } from '@/store/auth';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useSocket } from '@/hooks/useSocket';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  useSocket();
   const router = useRouter();
   const { accessToken, setAuth, clearAuth } = useAuthStore();
   const { activeOrgId, setActiveOrg } = useAppStore();

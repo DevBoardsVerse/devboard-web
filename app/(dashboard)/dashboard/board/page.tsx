@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/app';
 import { useTasks, useUpdateTask, useDeleteTask } from '@/lib/queries';
 import { CreateTaskModal } from '@/components/modals/CreateTaskModal';
 import { TaskDetailModal } from '@/components/modals/TaskDetailModal';
+import { useTaskEvents } from '@/hooks/useTaskEvents'; // ← ADD
 import { cn } from '@/lib/utils';
 import {
   Plus, CircleDot, Clock, AlertCircle,
@@ -322,14 +323,14 @@ export default function BoardPage() {
   const { data: taskData, isLoading } = useTasks(activeOrgId, activeProjectId, 1, 100);
   const { mutate: updateTask } = useUpdateTask(activeOrgId, activeProjectId);
 
-  // Local tasks state — source of truth for the board UI.
-  // Synced from server data but updated synchronously on drag so
-  // @hello-pangea/dnd never sees stale positions and snap-back doesn't occur.
   const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
     setTasks(taskData?.tasks ?? []);
   }, [taskData]);
+
+  // ── Real-time task updates via WebSocket ──────────────────── ← ADD
+  useTaskEvents(tasks, setTasks);                                // ← ADD
 
   const handleStatusChange = (taskId: string, status: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
@@ -338,12 +339,11 @@ export default function BoardPage() {
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-    const { draggableId, destination, source } = result;
+    const { draggableId, destination } = result;
     const newStatus = destination.droppableId;
     const task = tasks.find(t => t.id === draggableId);
     if (!task || task.status === newStatus) return;
 
-    // Update local state synchronously — card moves immediately with no snap-back
     setTasks(prev => prev.map(t => t.id === draggableId ? { ...t, status: newStatus } : t));
     updateTask({ taskId: draggableId, dto: { status: newStatus } });
   };

@@ -19,7 +19,11 @@ const ROLE_CONFIG = {
   viewer: { label: 'Viewer', icon: Eye,         color: 'text-black/35 dark:text-white/35', bg: 'bg-black/[0.04] dark:bg-white/[0.04]', border: 'border-black/[0.06] dark:border-white/[0.06]' },
 };
 
-const ASSIGNABLE_ROLES = ['admin', 'member', 'viewer'];
+const getRolesForMember = (memberRole: string, isOwner: boolean) => {
+  const all = ['admin', 'member', 'viewer'];
+  if (isOwner) return all.filter(r => r !== memberRole);
+  return ['member', 'viewer'].filter(r => r !== memberRole);
+};
 
 export default function MembersPage() {
   const { activeOrgId } = useAppStore();
@@ -33,6 +37,7 @@ export default function MembersPage() {
 
   const currentUserMember = members.find(m => m.userId === user?.id);
   const canManage = currentUserMember?.role === 'owner' || currentUserMember?.role === 'admin';
+  const isCurrentUserOwner = currentUserMember?.role === 'owner';
 
   const handleRoleChange = (userId: string, role: string) => {
     updateRole({ userId, role }, {
@@ -90,7 +95,7 @@ export default function MembersPage() {
       </div>
 
       {/* Members list */}
-      <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-[#141414] overflow-hidden">
+      <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-[#141414]">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 size={22} className="animate-spin text-black/20 dark:text-white/20" />
@@ -162,7 +167,7 @@ export default function MembersPage() {
                           <div className="px-3 py-2 text-[10px] font-semibold text-black/30 dark:text-white/30 uppercase tracking-wider border-b border-black/[0.05] dark:border-white/[0.05]">
                             Change role
                           </div>
-                          {ASSIGNABLE_ROLES.filter(r => r !== member.role).map(r => {
+                          {getRolesForMember(member.role, isCurrentUserOwner).map(r => {
                             const rc = ROLE_CONFIG[r as keyof typeof ROLE_CONFIG];
                             const RIcon = rc.icon;
                             return (
@@ -180,15 +185,17 @@ export default function MembersPage() {
                               </button>
                             );
                           })}
-                          <div className="border-t border-black/[0.05] dark:border-white/[0.05]">
-                            <button
-                              onClick={() => handleRemove(member.userId, member.user?.firstName ?? 'Member')}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                            >
-                              <Trash2 size={12} />
-                              Remove member
-                            </button>
-                          </div>
+                          {(isCurrentUserOwner || member.role !== 'admin') && (
+                            <div className="border-t border-black/[0.05] dark:border-white/[0.05]">
+                              <button
+                                onClick={() => handleRemove(member.userId, member.user?.firstName ?? 'Member')}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 size={12} />
+                                Remove member
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}

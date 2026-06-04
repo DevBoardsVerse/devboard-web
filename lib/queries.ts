@@ -209,6 +209,7 @@ export function useOrgActivity(
       return raw;
     },
     enabled: !!orgId,
+     staleTime: 30_000, // treat data as fresh for 30s — prevents refetch on tab focus
   });
 }
 

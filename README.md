@@ -41,14 +41,6 @@
 - **Dark mode** — full light/dark theme support
 - **JWT auth** — silent refresh on reload, automatic token rotation
 
-## Screenshots
-
-> Dashboard overview with stat cards, project list, member panel, and activity feed.
-
-> Kanban board with drag-and-drop across To Do / In Progress / In Review / Done columns.
-
-> Command palette (⌘K) searching tasks and projects from local cache.
-
 ## Local Setup
 
 ```bash

@@ -8,6 +8,9 @@ import { useAppStore } from '@/store/app';
 import { useOrgMembers } from '@/lib/queries';
 import { toast } from '@/components/ui/toaster';
 
+import { Sparkles } from 'lucide-react';
+import { suggestTask } from '@/lib/ai';
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -39,10 +42,29 @@ export function CreateTaskModal({ open, onClose, defaultStatus }: Props) {
   const [status, setStatus] = useState(defaultStatus ?? 'todo');
   const [assigneeId, setAssigneeId] = useState('');
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [priorityReason, setPriorityReason] = useState('');
+
   // Sync status when defaultStatus changes (e.g. clicking + in a column)
   if (defaultStatus && defaultStatus !== status && !title) {
     setStatus(defaultStatus);
   }
+
+  const handleAiSuggest = async () => {
+    if (!title.trim()) return;
+    setAiLoading(true);
+    setPriorityReason('');
+    try {
+      const result = await suggestTask(title.trim(), description.trim() || undefined);
+      setDescription(result.description);
+      setPriority(result.priority);
+      setPriorityReason(result.reason);
+    } catch {
+      toast({ title: 'AI suggestion failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -133,9 +155,26 @@ export function CreateTaskModal({ open, onClose, defaultStatus }: Props) {
 
             {/* Description */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider">
-                Description <span className="text-black/30 dark:text-white/30 font-normal normal-case tracking-normal">(optional)</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider">
+                  Description <span className="text-black/30 dark:text-white/30 font-normal normal-case tracking-normal">(optional)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAiSuggest}
+                  disabled={!title.trim() || aiLoading}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
+                    'text-[#FAD4C0] border border-[#FAD4C0]/30 hover:bg-[#FAD4C0]/10',
+                    (!title.trim() || aiLoading) && 'opacity-40 cursor-not-allowed',
+                  )}
+                >
+                  {aiLoading
+                    ? <Loader2 size={11} className="animate-spin" />
+                    : <Sparkles size={11} />}
+                  {aiLoading ? 'Generating...' : '✨ Generate'}
+                </button>
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -149,6 +188,11 @@ export function CreateTaskModal({ open, onClose, defaultStatus }: Props) {
                   'focus:outline-none focus:ring-2 focus:ring-[#FAD4C0]/40 focus:border-[#FAD4C0]/50',
                 )}
               />
+              {priorityReason && (
+                  <p className="text-xs text-black/40 dark:text-white/40 italic leading-relaxed">
+                    {priorityReason}
+                  </p>
+                )}
             </div>
 
             {/* Status */}

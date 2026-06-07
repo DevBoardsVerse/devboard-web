@@ -48,11 +48,13 @@ export function TaskDetailModal({ task, orgId, projectId, onClose }: Props) {
           description: description.trim() || undefined,
           status,
           priority,
+          assigneeId: assigneeId || null,
         },
       },
       {
         onSuccess: () => {
           toast({ title: 'Task updated' });
+          setTimeout(onClose, 800);
         },
         onError: (err: any) => {
           toast({
@@ -194,14 +196,16 @@ export function TaskDetailModal({ task, orgId, projectId, onClose }: Props) {
               <label className="text-[11px] font-semibold text-black/40 dark:text-white/40 uppercase tracking-wider">
                 Assignee
               </label>
-              <select
+             <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
                 className={cn(
                   'px-3 py-2 rounded-xl text-sm transition-all',
-                  'bg-black/[0.04] dark:bg-white/[0.04]',
+                  'bg-white dark:bg-[#1a1a1a]',
                   'border border-black/[0.08] dark:border-white/[0.08]',
                   'text-black dark:text-white',
+                  '[&>option]:bg-white [&>option]:dark:bg-[#1a1a1a]',
+                  '[&>option]:text-black [&>option]:dark:text-white',
                   'focus:outline-none focus:ring-2 focus:ring-[#FAD4C0]/40',
                 )}
               >

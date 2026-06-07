@@ -139,8 +139,7 @@ export default function DashboardPage() {
 
   const [createOrgOpen, setCreateOrgOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
-  const [createTaskOpen, setCreateTaskOpen] = useState(false);
-
+  
   const { data: org } = useOrganization(activeOrgId);
   const { data: projects = [], isLoading: projectsLoading } = useProjects(activeOrgId);
   const { data: members = [], isLoading: membersLoading } = useOrgMembers(activeOrgId);
@@ -192,13 +191,6 @@ export default function DashboardPage() {
 
           {/* Quick actions */}
           <div className="flex items-center gap-2">
-            <button
-            onClick={() => setCreateTaskOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-[#FAD4C0] text-[#0F0F0F] font-semibold text-sm hover:bg-[#FAD4C0]/90 transition-colors">
-              <Plus size={16} />
-              New Task
-            </button>
             <button
               onClick={() => setCreateProjectOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl
@@ -254,7 +246,9 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-[#141414] border border-black/[0.07] dark:border-white/[0.07] p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-black dark:text-white font-semibold text-base">Projects</h3>
-            <button className="text-xs text-black/40 dark:text-white/40 hover:text-[#FAD4C0] flex items-center gap-1 transition-colors">
+            <button
+              onClick={() => router.push('/dashboard/board')}
+              className="text-xs text-black/40 dark:text-white/40 hover:text-[#FAD4C0] flex items-center gap-1 transition-colors">
               View all <ArrowRight size={12} />
             </button>
           </div>
@@ -504,10 +498,6 @@ export default function DashboardPage() {
         onClose={() => setCreateProjectOpen(false)}
       />
 
-      <CreateTaskModal
-        open={createTaskOpen}
-        onClose={() => setCreateTaskOpen(false)}
-      />
     </div>
   );
 }

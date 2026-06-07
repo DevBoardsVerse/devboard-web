@@ -275,7 +275,7 @@ export function useUpdateTask(orgId: string | null, projectId: string | null) {
   return useMutation({
     mutationFn: async ({ taskId, dto }: {
       taskId: string;
-      dto: { status?: string; priority?: string; title?: string; description?: string };
+      dto: { status?: string; priority?: string; title?: string; description?: string; assigneeId?: string | null };
     }) => {
       const res = await api.patch(
         `/organizations/${orgId}/projects/${projectId}/tasks/${taskId}`,

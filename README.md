@@ -28,6 +28,7 @@
 | State | Zustand (client) + TanStack React Query (server) |
 | Realtime | Socket.io client |
 | Drag & Drop | @hello-pangea/dnd |
+| AI | Groq API via NestJS backend |
 | Deploy | Vercel |
 
 ## Features
@@ -40,6 +41,7 @@
 - **Members management** — invite, role management, remove with privilege rules enforced
 - **Dark mode** — full light/dark theme support
 - **JWT auth** — silent refresh on reload, automatic token rotation
+- **AI task suggestions** — ✨ Generate button in task creation fills description and suggests priority using Groq's Llama 3.1, powered by the backend AI module
 
 ## Screenshots
 
